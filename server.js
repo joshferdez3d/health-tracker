@@ -5,6 +5,12 @@ const admin = require('firebase-admin');
 const path = require('path');
 require('dotenv').config();
 
+console.log('Environment check:');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID);
+console.log('Has GOOGLE_APPLICATION_CREDENTIALS_JSON:', !!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+console.log('Credentials length:', process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON?.length || 0);
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -13,19 +19,14 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public')); // Serve static files
 
-// Handle service account for both development and production
 let serviceAccount;
-if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-  // Production: use environment variable
+if (process.env.FIREBASE_CREDS) {
+  serviceAccount = JSON.parse(process.env.FIREBASE_CREDS);
+} else if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
   serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
 } else {
-  // Development: use local file (only when running locally)
-  try {
-    serviceAccount = require('./config/serviceAccountKey.json');
-  } catch (error) {
-    console.error('Missing Firebase credentials. Set GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable.');
-    process.exit(1);
-  }
+  console.error('Missing Firebase credentials');
+  process.exit(1);
 }
 // UPDATED CODE
 admin.initializeApp({
