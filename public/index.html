@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 5px;
+            margin-bottom: 30px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: white;
+            color: #4facfe;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .form-section h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input, .form-group select {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .data-table th {
+            background: #4facfe;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .data-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .fluid-summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .fluid-progress {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 3px;
+            margin-top: 10px;
+        }
+
+        .fluid-progress-bar {
+            background: white;
+            height: 20px;
+            border-radius: 7px;
+            transition: width 0.3s ease;
+        }
+
+        .reminder-item {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #4facfe;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .reminder-item h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .reminder-item.active {
+            border-left-color: #ff6b6b;
+            background: #fff5f5;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4facfe;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .delete-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .day-section {
+            background: white;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .day-header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 15px 20px;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        .measurement-group {
+            padding: 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .measurement-group:last-child {
+            border-bottom: none;
+        }
+
+        .measurement-group h4 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .measurement-entries {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .measurement-entry {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4facfe;
+        }
+
+        .measurement-time {
+            font-weight: 600;
+            color: #4facfe;
+            font-size: 0.9em;
+            text-transform: capitalize;
+        }
+
+        .measurement-value {
+            font-size: 1.1em;
+            color: #333;
+            margin-top: 5px;
+        }
+
+        .no-data {
+            text-align: center;
+            color: #666;
+            padding: 40px;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                margin: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 Health Tracker</h1>
+            <p>Monitoring Dad's Health Daily</p>
+        </div>
+
+        <div class="main-content">
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('vitals')">📊 Vitals</button>
+                <button class="tab" onclick="showTab('fluids')">💧 Fluids</button>
+                <button class="tab" onclick="showTab('reminders')">⏰ Reminders</button>
+                <button class="tab" onclick="showTab('history')">📈 History</button>
+            </div>
+
+            <!-- Vitals Tab -->
+            <div id="vitals" class="tab-content active">
+                <div class="form-section">
+                    <h3>📏 Weight Tracking</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Time</label>
+                            <select id="weightTime">
+                                <option value="morning">Morning</option>
+                                <option value="evening">Evening</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Weight (kg)</label>
+                            <input type="number" id="weightValue" step="0.1" placeholder="Enter weight">
+                        </div>
+                    </div>
+                    <button class="btn" onclick="addWeight()">Add Weight</button>
+                </div>
+
+                <div class="form-section">
+                    <h3>🩸 Glucose Tracking</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Time</label>
+                            <select id="glucoseTime">
+                                <option value="morning">Morning</option>
+                                <option value="afternoon">Afternoon</option>
+                                <option value="evening">Evening</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Glucose (mg/dL)</label>
+                            <input type="number" id="glucoseValue" placeholder="Enter glucose level">
+                        </div>
+                    </div>
+                    <button class="btn" onclick="addGlucose()">Add Glucose</button>
+                </div>
+
+                <div class="form-section">
+                    <h3>🩺 Blood Pressure Tracking</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Time</label>
+                            <select id="bpTime">
+                                <option value="morning">Morning</option>
+                                <option value="afternoon">Afternoon</option>
+                                <option value="evening">Evening</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Systolic</label>
+                            <input type="number" id="bpSystolic" placeholder="Enter systolic">
+                        </div>
+                        <div class="form-group">
+                            <label>Diastolic</label>
+                            <input type="number" id="bpDiastolic" placeholder="Enter diastolic">
+                        </div>
+                    </div>
+                    <button class="btn" onclick="addBloodPressure()">Add Blood Pressure</button>
+                </div>
+            </div>
+
+            <!-- Fluids Tab -->
+            <div id="fluids" class="tab-content">
+                <div class="fluid-summary">
+                    <h3>💧 Daily Fluid Intake</h3>
+                    <p>Total: <span id="totalFluid">0</span> mL / 1500 mL</p>
+                    <div class="fluid-progress">
+                        <div class="fluid-progress-bar" id="fluidProgressBar"></div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Add Fluid Intake</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Type of Fluid</label>
+                            <select id="fluidType">
+                                <option value="water">Water</option>
+                                <option value="tea">Tea</option>
+                                <option value="milk">Milk</option>
+                                <option value="juice">Juice</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Amount (mL)</label>
+                            <input type="number" id="fluidAmount" placeholder="Enter amount">
+                        </div>
+                        <div class="form-group">
+                            <label>Time</label>
+                            <input type="time" id="fluidTime">
+                        </div>
+                    </div>
+                    <button class="btn" onclick="addFluid()">Add Fluid</button>
+                </div>
+
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Type</th>
+                            <th>Amount (mL)</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fluidTableBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Reminders Tab -->
+            <div id="reminders" class="tab-content">
+                <div class="form-section">
+                    <h3>⏰ Set Reminders</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Reminder Type</label>
+                            <select id="reminderType">
+                                <option value="weight">Weight Check</option>
+                                <option value="glucose">Glucose Check</option>
+                                <option value="blood-pressure">Blood Pressure Check</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Time</label>
+                            <input type="time" id="reminderTime">
+                        </div>
+                        <div class="form-group">
+                            <label>Frequency</label>
+                            <select id="reminderFrequency">
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="addReminder()">Add Reminder</button>
+                </div>
+
+                <div id="remindersList">
+                    <!-- Reminders will be displayed here -->
+                </div>
+            </div>
+
+            <!-- History Tab -->
+            <div id="history" class="tab-content">
+                <div class="form-section">
+                    <h3>📊 Health History</h3>
+                    <div id="historyContainer">
+                        <!-- History will be displayed here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script>
+        // Global variables
+        let fluidIntake = [];
+        let reminders = [];
+        let healthData = {
+            weight: [],
+            glucose: [],
+            bloodPressure: []
+        };
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            updateFluidDisplay();
+            updateReminders();
+            checkReminders();
+            setInterval(checkReminders, 60000); // Check every minute
+        });
+
+        // Tab functionality
+        function showTab(tabName) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        // Weight tracking
+        function addWeight() {
+            const time = document.getElementById('weightTime').value;
+            const value = parseFloat(document.getElementById('weightValue').value);
+            
+            if (!value) {
+                showNotification('Please enter a valid weight value');
+                return;
+            }
+            
+            const entry = {
+                type: 'weight',
+                time: time,
+                value: value,
+                date: new Date().toISOString().split('T')[0],
+                timestamp: new Date().toISOString()
+            };
+            
+            healthData.weight.push(entry);
+            saveData();
+            updateHistory();
+            document.getElementById('weightValue').value = '';
+            showNotification('Weight recorded successfully!');
+        }
+
+        // Glucose tracking
+        function addGlucose() {
+            const time = document.getElementById('glucoseTime').value;
+            const value = parseFloat(document.getElementById('glucoseValue').value);
+            
+            if (!value) {
+                showNotification('Please enter a valid glucose value');
+                return;
+            }
+            
+            const entry = {
+                type: 'glucose',
+                time: time,
+                value: value + ' mg/dL',
+                date: new Date().toISOString().split('T')[0],
+                timestamp: new Date().toISOString()
+            };
+            
+            healthData.glucose.push(entry);
+            saveData();
+            updateHistory();
+            document.getElementById('glucoseValue').value = '';
+            showNotification('Glucose level recorded successfully!');
+        }
+
+        // Blood pressure tracking
+        function addBloodPressure() {
+            const time = document.getElementById('bpTime').value;
+            const systolic = parseFloat(document.getElementById('bpSystolic').value);
+            const diastolic = parseFloat(document.getElementById('bpDiastolic').value);
+            
+            if (!systolic || !diastolic) {
+                showNotification('Please enter valid blood pressure values');
+                return;
+            }
+            
+            const entry = {
+                type: 'blood-pressure',
+                time: time,
+                value: `${systolic}/${diastolic} mmHg`,
+                date: new Date().toISOString().split('T')[0],
+                timestamp: new Date().toISOString()
+            };
+            
+            healthData.bloodPressure.push(entry);
+            saveData();
+            updateHistory();
+            document.getElementById('bpSystolic').value = '';
+            document.getElementById('bpDiastolic').value = '';
+            showNotification('Blood pressure recorded successfully!');
+        }
+
+        // Fluid tracking
+        function addFluid() {
+            const type = document.getElementById('fluidType').value;
+            const amount = parseFloat(document.getElementById('fluidAmount').value);
+            const time = document.getElementById('fluidTime').value;
+            
+            if (!amount || !time) {
+                showNotification('Please enter valid fluid amount and time');
+                return;
+            }
+            
+            const entry = {
+                type: type,
+                amount: amount,
+                time: time,
+                date: new Date().toISOString().split('T')[0],
+                timestamp: new Date().toISOString()
+            };
+            
+            fluidIntake.push(entry);
+            saveData();
+            updateFluidDisplay();
+            updateFluidTable();
+            
+            // Clear form
+            document.getElementById('fluidAmount').value = '';
+            document.getElementById('fluidTime').value = '';
+            
+            showNotification('Fluid intake recorded successfully!');
+        }
+
+        // Update fluid display
+        function updateFluidDisplay() {
+            const today = new Date().toISOString().split('T')[0];
+            const todayFluids = fluidIntake.filter(f => f.date === today);
+            const total = todayFluids.reduce((sum, f) => sum + f.amount, 0);
+            
+            document.getElementById('totalFluid').textContent = total;
+            
+            const percentage = Math.min((total / 1500) * 100, 100);
+            document.getElementById('fluidProgressBar').style.width = percentage + '%';
+            
+            // Change color based on intake
+            const progressBar = document.getElementById('fluidProgressBar');
+            if (percentage >= 100) {
+                progressBar.style.background = '#ff6b6b';
+            } else if (percentage >= 80) {
+                progressBar.style.background = '#ffd93d';
+            } else {
+                progressBar.style.background = 'white';
+            }
+        }
+
+        // Update fluid table
+        function updateFluidTable() {
+            const today = new Date().toISOString().split('T')[0];
+            const todayFluids = fluidIntake.filter(f => f.date === today);
+            const tableBody = document.getElementById('fluidTableBody');
+            
+            tableBody.innerHTML = '';
+            
+            todayFluids.forEach((fluid, index) => {
+                const row = tableBody.insertRow();
+                row.innerHTML = `
+                    <td>${fluid.time}</td>
+                    <td>${fluid.type.charAt(0).toUpperCase() + fluid.type.slice(1)}</td>
+                    <td>${fluid.amount} mL</td>
+                    <td><button class="delete-btn" onclick="deleteFluid(${index})">Delete</button></td>
+                `;
+            });
+        }
+
+        // Delete fluid entry
+        function deleteFluid(index) {
+            const today = new Date().toISOString().split('T')[0];
+            const todayFluids = fluidIntake.filter(f => f.date === today);
+            const fluidToDelete = todayFluids[index];
+            
+            // Find and remove the fluid from the main array
+            const mainIndex = fluidIntake.findIndex(f => f.timestamp === fluidToDelete.timestamp);
+            if (mainIndex > -1) {
+                fluidIntake.splice(mainIndex, 1);
+            }
+            
+            saveData();
+            updateFluidDisplay();
+            updateFluidTable();
+            showNotification('Fluid entry deleted');
+        }
+
+        // Reminder functionality
+        function addReminder() {
+            const type = document.getElementById('reminderType').value;
+            const time = document.getElementById('reminderTime').value;
+            const frequency = document.getElementById('reminderFrequency').value;
+            
+            if (!time) {
+                showNotification('Please select a time for the reminder');
+                return;
+            }
+            
+            const reminder = {
+                id: Date.now(),
+                type: type,
+                time: time,
+                frequency: frequency,
+                active: true
+            };
+            
+            reminders.push(reminder);
+            saveData();
+            updateReminders();
+            
+            // Clear form
+            document.getElementById('reminderTime').value = '';
+            
+            showNotification('Reminder set successfully!');
+        }
+
+        // Update reminders display
+        function updateReminders() {
+            const remindersList = document.getElementById('remindersList');
+            remindersList.innerHTML = '';
+            
+            reminders.forEach(reminder => {
+                const reminderItem = document.createElement('div');
+                reminderItem.className = 'reminder-item';
+                reminderItem.innerHTML = `
+                    <h4>${reminder.type.replace('-', ' ').toUpperCase()}</h4>
+                    <p>Time: ${reminder.time}</p>
+                    <p>Frequency: ${reminder.frequency}</p>
+                    <button class="delete-btn" onclick="deleteReminder(${reminder.id})">Delete</button>
+                `;
+                remindersList.appendChild(reminderItem);
+            });
+        }
+
+        // Delete reminder
+        function deleteReminder(id) {
+            reminders = reminders.filter(r => r.id !== id);
+            saveData();
+            updateReminders();
+            showNotification('Reminder deleted');
+        }
+
+        // Check reminders
+        function checkReminders() {
+            const now = new Date();
+            const currentTime = now.toTimeString().slice(0, 5);
+            
+            reminders.forEach(reminder => {
+                if (reminder.time === currentTime && reminder.active) {
+                    showNotification(`⏰ Time for ${reminder.type.replace('-', ' ')} check!`, 10000);
+                }
+            });
+        }
+
+        // Update history
+        function updateHistory() {
+            const historyContainer = document.getElementById('historyContainer');
+            historyContainer.innerHTML = '';
+            
+            // Combine all health data
+            const allData = [
+                ...healthData.weight,
+                ...healthData.glucose,
+                ...healthData.bloodPressure
+            ];
+            
+            if (allData.length === 0) {
+                historyContainer.innerHTML = '<div class="no-data">No health data recorded yet</div>';
+                return;
+            }
+            
+            // Group data by date
+            const dataByDate = {};
+            allData.forEach(entry => {
+                if (!dataByDate[entry.date]) {
+                    dataByDate[entry.date] = {
+                        weight: [],
+                        glucose: [],
+                        'blood-pressure': []
+                    };
+                }
+                dataByDate[entry.date][entry.type].push(entry);
+            });
+            
+            // Sort dates (newest first)
+            const sortedDates = Object.keys(dataByDate).sort((a, b) => new Date(b) - new Date(a));
+            
+            // Create sections for each date
+            sortedDates.forEach(date => {
+                const daySection = document.createElement('div');
+                daySection.className = 'day-section';
+                
+                // Format date for display
+                const dateObj = new Date(date + 'T00:00:00');
+                const formattedDate = dateObj.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                
+                let dayHTML = `<div class="day-header">${formattedDate}</div>`;
+                
+                // Add weight data
+                if (dataByDate[date].weight.length > 0) {
+                    dayHTML += `
+                        <div class="measurement-group">
+                            <h4>📏 Weight</h4>
+                            <div class="measurement-entries">
+                    `;
+                    
+                    dataByDate[date].weight.forEach(entry => {
+                        dayHTML += `
+                            <div class="measurement-entry">
+                                <div class="measurement-time">${entry.time}</div>
+                                <div class="measurement-value">${entry.value} kg</div>
+                            </div>
+                        `;
+                    });
+                    
+                    dayHTML += `</div></div>`;
+                }
+                
+                // Add glucose data
+                if (dataByDate[date].glucose.length > 0) {
+                    dayHTML += `
+                        <div class="measurement-group">
+                            <h4>🩸 Glucose</h4>
+                            <div class="measurement-entries">
+                    `;
+                    
+                    dataByDate[date].glucose.forEach(entry => {
+                        dayHTML += `
+                            <div class="measurement-entry">
+                                <div class="measurement-time">${entry.time}</div>
+                                <div class="measurement-value">${entry.value}</div>
+                            </div>
+                        `;
+                    });
+                    
+                    dayHTML += `</div></div>`;
+                }
+                
+                // Add blood pressure data
+                if (dataByDate[date]['blood-pressure'].length > 0) {
+                    dayHTML += `
+                        <div class="measurement-group">
+                            <h4>🩺 Blood Pressure</h4>
+                            <div class="measurement-entries">
+                    `;
+                    
+                    dataByDate[date]['blood-pressure'].forEach(entry => {
+                        dayHTML += `
+                            <div class="measurement-entry">
+                                <div class="measurement-time">${entry.time}</div>
+                                <div class="measurement-value">${entry.value}</div>
+                            </div>
+                        `;
+                    });
+                    
+                    dayHTML += `</div></div>`;
+                }
+                
+                daySection.innerHTML = dayHTML;
+                historyContainer.appendChild(daySection);
+            });
+        }
+
+        // Show notification
+        function showNotification(message, duration = 3000) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, duration);
+        }
+
+        // Data persistence (using localStorage for now)
+        function saveData() {
+            const data = {
+                fluidIntake: fluidIntake,
+                reminders: reminders,
+                healthData: healthData
+            };
+            localStorage.setItem('healthTrackerData', JSON.stringify(data));
+        }
+
+        function loadData() {
+            const savedData = localStorage.getItem('healthTrackerData');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                fluidIntake = data.fluidIntake || [];
+                reminders = data.reminders || [];
+                healthData = data.healthData || { weight: [], glucose: [], bloodPressure: [] };
+                
+                updateFluidTable();
+                updateHistory();
+            }
+        }
+
+        // Set current time for fluid entry
+        document.getElementById('fluidTime').value = new Date().toTimeString().slice(0, 5);
+    </script>
+</body>
+</html>
