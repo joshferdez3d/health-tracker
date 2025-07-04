@@ -13,15 +13,19 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public')); // Serve static files
 
-// Initialize Firebase Admin SDK
 // Handle service account for both development and production
 let serviceAccount;
 if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
   // Production: use environment variable
   serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
 } else {
-  // Development: use local file
-  serviceAccount = require('./config/serviceAccountKey.json');
+  // Development: use local file (only when running locally)
+  try {
+    serviceAccount = require('./config/serviceAccountKey.json');
+  } catch (error) {
+    console.error('Missing Firebase credentials. Set GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable.');
+    process.exit(1);
+  }
 }
 // UPDATED CODE
 admin.initializeApp({
