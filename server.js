@@ -41,7 +41,11 @@ if (firebaseCreds) {
   console.error('❌ Missing Firebase credentials. Please set FIREBASE_CREDS environment variable.');
   process.exit(1);
 }
-}
+
+// UPDATED CODE - Initialize Firebase Admin
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
 // UPDATED CODE
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
