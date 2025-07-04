@@ -499,426 +499,511 @@
 
     <div id="notification" class="notification"></div>
 
-    <script>
-        // Global variables
-        let fluidIntake = [];
-        let reminders = [];
-        let healthData = {
-            weight: [],
-            glucose: [],
-            bloodPressure: []
-        };
+<script>
+    // Global variables
+    let fluidIntake = [];
+    let reminders = [];
+    let healthData = {
+        weight: [],
+        glucose: [],
+        bloodPressure: []
+    };
 
-        // Initialize the app
-        document.addEventListener('DOMContentLoaded', function() {
-            loadData();
-            updateFluidDisplay();
-            updateReminders();
-            checkReminders();
-            setInterval(checkReminders, 60000); // Check every minute
-        });
+    // API Base URL - change this to your backend URL
+    const API_BASE_URL = window.location.origin + '/api';
 
-        // Tab functionality
-        function showTab(tabName) {
-            // Hide all tab contents
-            const tabContents = document.querySelectorAll('.tab-content');
-            tabContents.forEach(content => content.classList.remove('active'));
-            
-            // Remove active class from all tabs
-            const tabs = document.querySelectorAll('.tab');
-            tabs.forEach(tab => tab.classList.remove('active'));
-            
-            // Show selected tab content
-            document.getElementById(tabName).classList.add('active');
-            
-            // Add active class to clicked tab
-            event.target.classList.add('active');
-        }
+    // Initialize the app
+    document.addEventListener('DOMContentLoaded', function() {
+        loadData();
+        checkReminders();
+        setInterval(checkReminders, 60000); // Check every minute
+    });
 
-        // Weight tracking
-        function addWeight() {
-            const time = document.getElementById('weightTime').value;
-            const value = parseFloat(document.getElementById('weightValue').value);
-            
-            if (!value) {
-                showNotification('Please enter a valid weight value');
-                return;
+    // API Helper Functions
+    async function apiRequest(endpoint, options = {}) {
+        try {
+            console.log(`Making API request to: ${API_BASE_URL}${endpoint}`);
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                },
+                ...options
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+
+            const result = await response.json();
+            console.log('API response:', result);
+            return result;
+        } catch (error) {
+            console.error('API Request failed:', error);
+            showNotification('Error: ' + error.message, 5000);
+            throw error;
+        }
+    }
+
+    // Tab functionality
+    function showTab(tabName) {
+        // Hide all tab contents
+        const tabContents = document.querySelectorAll('.tab-content');
+        tabContents.forEach(content => content.classList.remove('active'));
+        
+        // Remove active class from all tabs
+        const tabs = document.querySelectorAll('.tab');
+        tabs.forEach(tab => tab.classList.remove('active'));
+        
+        // Show selected tab content
+        document.getElementById(tabName).classList.add('active');
+        
+        // Add active class to clicked tab
+        event.target.classList.add('active');
+    }
+
+    // Weight tracking
+    async function addWeight() {
+        const time = document.getElementById('weightTime').value;
+        const value = parseFloat(document.getElementById('weightValue').value);
+        
+        if (!value) {
+            showNotification('Please enter a valid weight value');
+            return;
+        }
+        
+        try {
+            console.log('Adding weight:', { time, value });
+            const result = await apiRequest('/weight', {
+                method: 'POST',
+                body: JSON.stringify({
+                    time: time,
+                    value: value
+                })
+            });
             
-            const entry = {
-                type: 'weight',
-                time: time,
-                value: value,
-                date: new Date().toISOString().split('T')[0],
-                timestamp: new Date().toISOString()
-            };
-            
-            healthData.weight.push(entry);
-            saveData();
-            updateHistory();
             document.getElementById('weightValue').value = '';
             showNotification('Weight recorded successfully!');
+            loadData(); // Refresh data
+        } catch (error) {
+            showNotification('Failed to record weight');
         }
+    }
 
-        // Glucose tracking
-        function addGlucose() {
-            const time = document.getElementById('glucoseTime').value;
-            const value = parseFloat(document.getElementById('glucoseValue').value);
+    // Glucose tracking
+    async function addGlucose() {
+        const time = document.getElementById('glucoseTime').value;
+        const value = parseFloat(document.getElementById('glucoseValue').value);
+        
+        if (!value) {
+            showNotification('Please enter a valid glucose value');
+            return;
+        }
+        
+        try {
+            console.log('Adding glucose:', { time, value });
+            const result = await apiRequest('/glucose', {
+                method: 'POST',
+                body: JSON.stringify({
+                    time: time,
+                    value: value
+                })
+            });
             
-            if (!value) {
-                showNotification('Please enter a valid glucose value');
-                return;
-            }
-            
-            const entry = {
-                type: 'glucose',
-                time: time,
-                value: value + ' mg/dL',
-                date: new Date().toISOString().split('T')[0],
-                timestamp: new Date().toISOString()
-            };
-            
-            healthData.glucose.push(entry);
-            saveData();
-            updateHistory();
             document.getElementById('glucoseValue').value = '';
             showNotification('Glucose level recorded successfully!');
+            loadData(); // Refresh data
+        } catch (error) {
+            showNotification('Failed to record glucose level');
         }
+    }
 
-        // Blood pressure tracking
-        function addBloodPressure() {
-            const time = document.getElementById('bpTime').value;
-            const systolic = parseFloat(document.getElementById('bpSystolic').value);
-            const diastolic = parseFloat(document.getElementById('bpDiastolic').value);
+    // Blood pressure tracking
+    async function addBloodPressure() {
+        const time = document.getElementById('bpTime').value;
+        const systolic = parseFloat(document.getElementById('bpSystolic').value);
+        const diastolic = parseFloat(document.getElementById('bpDiastolic').value);
+        
+        if (!systolic || !diastolic) {
+            showNotification('Please enter valid blood pressure values');
+            return;
+        }
+        
+        try {
+            console.log('Adding blood pressure:', { time, systolic, diastolic });
+            const result = await apiRequest('/blood-pressure', {
+                method: 'POST',
+                body: JSON.stringify({
+                    time: time,
+                    systolic: systolic,
+                    diastolic: diastolic
+                })
+            });
             
-            if (!systolic || !diastolic) {
-                showNotification('Please enter valid blood pressure values');
-                return;
-            }
-            
-            const entry = {
-                type: 'blood-pressure',
-                time: time,
-                value: `${systolic}/${diastolic} mmHg`,
-                date: new Date().toISOString().split('T')[0],
-                timestamp: new Date().toISOString()
-            };
-            
-            healthData.bloodPressure.push(entry);
-            saveData();
-            updateHistory();
             document.getElementById('bpSystolic').value = '';
             document.getElementById('bpDiastolic').value = '';
             showNotification('Blood pressure recorded successfully!');
+            loadData(); // Refresh data
+        } catch (error) {
+            showNotification('Failed to record blood pressure');
         }
+    }
 
-        // Fluid tracking
-        function addFluid() {
-            const type = document.getElementById('fluidType').value;
-            const amount = parseFloat(document.getElementById('fluidAmount').value);
-            const time = document.getElementById('fluidTime').value;
-            
-            if (!amount || !time) {
-                showNotification('Please enter valid fluid amount and time');
-                return;
-            }
-            
-            const entry = {
-                type: type,
-                amount: amount,
-                time: time,
-                date: new Date().toISOString().split('T')[0],
-                timestamp: new Date().toISOString()
-            };
-            
-            fluidIntake.push(entry);
-            saveData();
-            updateFluidDisplay();
-            updateFluidTable();
+    // Fluid tracking
+    async function addFluid() {
+        const type = document.getElementById('fluidType').value;
+        const amount = parseFloat(document.getElementById('fluidAmount').value);
+        const time = document.getElementById('fluidTime').value;
+        
+        if (!amount || !time) {
+            showNotification('Please enter valid fluid amount and time');
+            return;
+        }
+        
+        try {
+            console.log('Adding fluid:', { type, amount, time });
+            const result = await apiRequest('/fluid', {
+                method: 'POST',
+                body: JSON.stringify({
+                    type: type,
+                    amount: amount,
+                    time: time
+                })
+            });
             
             // Clear form
             document.getElementById('fluidAmount').value = '';
-            document.getElementById('fluidTime').value = '';
+            document.getElementById('fluidTime').value = new Date().toTimeString().slice(0, 5);
             
             showNotification('Fluid intake recorded successfully!');
+            loadFluidData(); // Refresh fluid data
+        } catch (error) {
+            showNotification('Failed to record fluid intake');
         }
+    }
 
-        // Update fluid display
-        function updateFluidDisplay() {
-            const today = new Date().toISOString().split('T')[0];
-            const todayFluids = fluidIntake.filter(f => f.date === today);
-            const total = todayFluids.reduce((sum, f) => sum + f.amount, 0);
+    // Load fluid data from API
+    async function loadFluidData() {
+        try {
+            const data = await apiRequest('/fluid');
+            fluidIntake = data.fluids || [];
             
-            document.getElementById('totalFluid').textContent = total;
-            
-            const percentage = Math.min((total / 1500) * 100, 100);
-            document.getElementById('fluidProgressBar').style.width = percentage + '%';
-            
-            // Change color based on intake
-            const progressBar = document.getElementById('fluidProgressBar');
-            if (percentage >= 100) {
-                progressBar.style.background = '#ff6b6b';
-            } else if (percentage >= 80) {
-                progressBar.style.background = '#ffd93d';
-            } else {
-                progressBar.style.background = 'white';
-            }
-        }
-
-        // Update fluid table
-        function updateFluidTable() {
-            const today = new Date().toISOString().split('T')[0];
-            const todayFluids = fluidIntake.filter(f => f.date === today);
-            const tableBody = document.getElementById('fluidTableBody');
-            
-            tableBody.innerHTML = '';
-            
-            todayFluids.forEach((fluid, index) => {
-                const row = tableBody.insertRow();
-                row.innerHTML = `
-                    <td>${fluid.time}</td>
-                    <td>${fluid.type.charAt(0).toUpperCase() + fluid.type.slice(1)}</td>
-                    <td>${fluid.amount} mL</td>
-                    <td><button class="delete-btn" onclick="deleteFluid(${index})">Delete</button></td>
-                `;
-            });
-        }
-
-        // Delete fluid entry
-        function deleteFluid(index) {
-            const today = new Date().toISOString().split('T')[0];
-            const todayFluids = fluidIntake.filter(f => f.date === today);
-            const fluidToDelete = todayFluids[index];
-            
-            // Find and remove the fluid from the main array
-            const mainIndex = fluidIntake.findIndex(f => f.timestamp === fluidToDelete.timestamp);
-            if (mainIndex > -1) {
-                fluidIntake.splice(mainIndex, 1);
-            }
-            
-            saveData();
-            updateFluidDisplay();
+            updateFluidDisplay(data.totalAmount, data.percentageConsumed);
             updateFluidTable();
-            showNotification('Fluid entry deleted');
+        } catch (error) {
+            console.error('Failed to load fluid data:', error);
         }
+    }
 
-        // Reminder functionality
-        function addReminder() {
-            const type = document.getElementById('reminderType').value;
-            const time = document.getElementById('reminderTime').value;
-            const frequency = document.getElementById('reminderFrequency').value;
+    // Update fluid display
+    function updateFluidDisplay(totalAmount = 0, percentage = 0) {
+        document.getElementById('totalFluid').textContent = totalAmount;
+        
+        const progressBar = document.getElementById('fluidProgressBar');
+        progressBar.style.width = Math.min(percentage, 100) + '%';
+        
+        // Change color based on intake
+        if (percentage >= 100) {
+            progressBar.style.background = '#ff6b6b';
+        } else if (percentage >= 80) {
+            progressBar.style.background = '#ffd93d';
+        } else {
+            progressBar.style.background = 'white';
+        }
+    }
+
+    // Update fluid table
+    function updateFluidTable() {
+        const tableBody = document.getElementById('fluidTableBody');
+        tableBody.innerHTML = '';
+        
+        fluidIntake.forEach((fluid) => {
+            const row = tableBody.insertRow();
+            row.innerHTML = `
+                <td>${fluid.time}</td>
+                <td>${fluid.type.charAt(0).toUpperCase() + fluid.type.slice(1)}</td>
+                <td>${fluid.amount} mL</td>
+                <td><button class="delete-btn" onclick="deleteFluid('${fluid.id}')">Delete</button></td>
+            `;
+        });
+    }
+
+    // Delete fluid entry
+    async function deleteFluid(fluidId) {
+        try {
+            await apiRequest(`/fluid/${fluidId}`, {
+                method: 'DELETE'
+            });
             
-            if (!time) {
-                showNotification('Please select a time for the reminder');
-                return;
-            }
-            
-            const reminder = {
-                id: Date.now(),
-                type: type,
-                time: time,
-                frequency: frequency,
-                active: true
-            };
-            
-            reminders.push(reminder);
-            saveData();
-            updateReminders();
+            showNotification('Fluid entry deleted');
+            loadFluidData(); // Refresh fluid data
+        } catch (error) {
+            showNotification('Failed to delete fluid entry');
+        }
+    }
+
+    // Reminder functionality
+    async function addReminder() {
+        const type = document.getElementById('reminderType').value;
+        const time = document.getElementById('reminderTime').value;
+        const frequency = document.getElementById('reminderFrequency').value;
+        
+        if (!time) {
+            showNotification('Please select a time for the reminder');
+            return;
+        }
+        
+        try {
+            const result = await apiRequest('/reminders', {
+                method: 'POST',
+                body: JSON.stringify({
+                    type: type,
+                    time: time,
+                    frequency: frequency
+                })
+            });
             
             // Clear form
             document.getElementById('reminderTime').value = '';
             
             showNotification('Reminder set successfully!');
+            loadReminders(); // Refresh reminders
+        } catch (error) {
+            showNotification('Failed to set reminder');
         }
+    }
 
-        // Update reminders display
-        function updateReminders() {
-            const remindersList = document.getElementById('remindersList');
-            remindersList.innerHTML = '';
-            
-            reminders.forEach(reminder => {
-                const reminderItem = document.createElement('div');
-                reminderItem.className = 'reminder-item';
-                reminderItem.innerHTML = `
-                    <h4>${reminder.type.replace('-', ' ').toUpperCase()}</h4>
-                    <p>Time: ${reminder.time}</p>
-                    <p>Frequency: ${reminder.frequency}</p>
-                    <button class="delete-btn" onclick="deleteReminder(${reminder.id})">Delete</button>
-                `;
-                remindersList.appendChild(reminderItem);
-            });
-        }
-
-        // Delete reminder
-        function deleteReminder(id) {
-            reminders = reminders.filter(r => r.id !== id);
-            saveData();
+    // Load reminders from API
+    async function loadReminders() {
+        try {
+            const data = await apiRequest('/reminders');
+            reminders = data || [];
             updateReminders();
-            showNotification('Reminder deleted');
+        } catch (error) {
+            console.error('Failed to load reminders:', error);
         }
+    }
 
-        // Check reminders
-        function checkReminders() {
-            const now = new Date();
-            const currentTime = now.toTimeString().slice(0, 5);
-            
-            reminders.forEach(reminder => {
-                if (reminder.time === currentTime && reminder.active) {
-                    showNotification(`⏰ Time for ${reminder.type.replace('-', ' ')} check!`, 10000);
-                }
+    // Update reminders display
+    function updateReminders() {
+        const remindersList = document.getElementById('remindersList');
+        remindersList.innerHTML = '';
+        
+        reminders.forEach(reminder => {
+            const reminderItem = document.createElement('div');
+            reminderItem.className = 'reminder-item';
+            reminderItem.innerHTML = `
+                <h4>${reminder.type.replace('-', ' ').toUpperCase()}</h4>
+                <p>Time: ${reminder.time}</p>
+                <p>Frequency: ${reminder.frequency}</p>
+                <button class="delete-btn" onclick="deleteReminder('${reminder.id}')">Delete</button>
+            `;
+            remindersList.appendChild(reminderItem);
+        });
+    }
+
+    // Delete reminder
+    async function deleteReminder(reminderId) {
+        try {
+            await apiRequest(`/reminders/${reminderId}`, {
+                method: 'DELETE'
             });
+            
+            showNotification('Reminder deleted');
+            loadReminders(); // Refresh reminders
+        } catch (error) {
+            showNotification('Failed to delete reminder');
         }
+    }
 
-        // Update history
-        function updateHistory() {
-            const historyContainer = document.getElementById('historyContainer');
-            historyContainer.innerHTML = '';
+    // Load health data from API
+    async function loadHealthData() {
+        try {
+            const data = await apiRequest('/health-data');
             
-            // Combine all health data
-            const allData = [
-                ...healthData.weight,
-                ...healthData.glucose,
-                ...healthData.bloodPressure
-            ];
+            // Transform data for frontend compatibility
+            healthData = {
+                weight: [],
+                glucose: [],
+                bloodPressure: []
+            };
             
-            if (allData.length === 0) {
-                historyContainer.innerHTML = '<div class="no-data">No health data recorded yet</div>';
-                return;
+            if (data.healthData) {
+                data.healthData.forEach(item => {
+                    if (item.type === 'weight') {
+                        healthData.weight.push(item);
+                    } else if (item.type === 'glucose') {
+                        healthData.glucose.push(item);
+                    } else if (item.type === 'blood-pressure') {
+                        healthData.bloodPressure.push(item);
+                    }
+                });
             }
             
-            // Group data by date
-            const dataByDate = {};
-            allData.forEach(entry => {
-                if (!dataByDate[entry.date]) {
-                    dataByDate[entry.date] = {
-                        weight: [],
-                        glucose: [],
-                        'blood-pressure': []
-                    };
-                }
-                dataByDate[entry.date][entry.type].push(entry);
+            updateHistory();
+        } catch (error) {
+            console.error('Failed to load health data:', error);
+        }
+    }
+
+    // Update history
+    function updateHistory() {
+        const historyContainer = document.getElementById('historyContainer');
+        historyContainer.innerHTML = '';
+        
+        // Combine all health data
+        const allData = [
+            ...healthData.weight,
+            ...healthData.glucose,
+            ...healthData.bloodPressure
+        ];
+        
+        if (allData.length === 0) {
+            historyContainer.innerHTML = '<div class="no-data">No health data recorded yet</div>';
+            return;
+        }
+        
+        // Group data by date
+        const dataByDate = {};
+        allData.forEach(entry => {
+            if (!dataByDate[entry.date]) {
+                dataByDate[entry.date] = {
+                    weight: [],
+                    glucose: [],
+                    'blood-pressure': []
+                };
+            }
+            dataByDate[entry.date][entry.type].push(entry);
+        });
+        
+        // Sort dates (newest first)
+        const sortedDates = Object.keys(dataByDate).sort((a, b) => new Date(b) - new Date(a));
+        
+        // Create sections for each date
+        sortedDates.forEach(date => {
+            const daySection = document.createElement('div');
+            daySection.className = 'day-section';
+            
+            // Format date for display
+            const dateObj = new Date(date + 'T00:00:00');
+            const formattedDate = dateObj.toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
             });
             
-            // Sort dates (newest first)
-            const sortedDates = Object.keys(dataByDate).sort((a, b) => new Date(b) - new Date(a));
+            let dayHTML = `<div class="day-header">${formattedDate}</div>`;
             
-            // Create sections for each date
-            sortedDates.forEach(date => {
-                const daySection = document.createElement('div');
-                daySection.className = 'day-section';
+            // Add weight data
+            if (dataByDate[date].weight.length > 0) {
+                dayHTML += `
+                    <div class="measurement-group">
+                        <h4>📏 Weight</h4>
+                        <div class="measurement-entries">
+                `;
                 
-                // Format date for display
-                const dateObj = new Date(date + 'T00:00:00');
-                const formattedDate = dateObj.toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
+                dataByDate[date].weight.forEach(entry => {
+                    dayHTML += `
+                        <div class="measurement-entry">
+                            <div class="measurement-time">${entry.time}</div>
+                            <div class="measurement-value">${entry.value} kg</div>
+                        </div>
+                    `;
                 });
                 
-                let dayHTML = `<div class="day-header">${formattedDate}</div>`;
-                
-                // Add weight data
-                if (dataByDate[date].weight.length > 0) {
-                    dayHTML += `
-                        <div class="measurement-group">
-                            <h4>📏 Weight</h4>
-                            <div class="measurement-entries">
-                    `;
-                    
-                    dataByDate[date].weight.forEach(entry => {
-                        dayHTML += `
-                            <div class="measurement-entry">
-                                <div class="measurement-time">${entry.time}</div>
-                                <div class="measurement-value">${entry.value} kg</div>
-                            </div>
-                        `;
-                    });
-                    
-                    dayHTML += `</div></div>`;
-                }
-                
-                // Add glucose data
-                if (dataByDate[date].glucose.length > 0) {
-                    dayHTML += `
-                        <div class="measurement-group">
-                            <h4>🩸 Glucose</h4>
-                            <div class="measurement-entries">
-                    `;
-                    
-                    dataByDate[date].glucose.forEach(entry => {
-                        dayHTML += `
-                            <div class="measurement-entry">
-                                <div class="measurement-time">${entry.time}</div>
-                                <div class="measurement-value">${entry.value}</div>
-                            </div>
-                        `;
-                    });
-                    
-                    dayHTML += `</div></div>`;
-                }
-                
-                // Add blood pressure data
-                if (dataByDate[date]['blood-pressure'].length > 0) {
-                    dayHTML += `
-                        <div class="measurement-group">
-                            <h4>🩺 Blood Pressure</h4>
-                            <div class="measurement-entries">
-                    `;
-                    
-                    dataByDate[date]['blood-pressure'].forEach(entry => {
-                        dayHTML += `
-                            <div class="measurement-entry">
-                                <div class="measurement-time">${entry.time}</div>
-                                <div class="measurement-value">${entry.value}</div>
-                            </div>
-                        `;
-                    });
-                    
-                    dayHTML += `</div></div>`;
-                }
-                
-                daySection.innerHTML = dayHTML;
-                historyContainer.appendChild(daySection);
-            });
-        }
-
-        // Show notification
-        function showNotification(message, duration = 3000) {
-            const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.classList.add('show');
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, duration);
-        }
-
-        // Data persistence (using localStorage for now)
-        function saveData() {
-            const data = {
-                fluidIntake: fluidIntake,
-                reminders: reminders,
-                healthData: healthData
-            };
-            localStorage.setItem('healthTrackerData', JSON.stringify(data));
-        }
-
-        function loadData() {
-            const savedData = localStorage.getItem('healthTrackerData');
-            if (savedData) {
-                const data = JSON.parse(savedData);
-                fluidIntake = data.fluidIntake || [];
-                reminders = data.reminders || [];
-                healthData = data.healthData || { weight: [], glucose: [], bloodPressure: [] };
-                
-                updateFluidTable();
-                updateHistory();
+                dayHTML += `</div></div>`;
             }
-        }
+            
+            // Add glucose data
+            if (dataByDate[date].glucose.length > 0) {
+                dayHTML += `
+                    <div class="measurement-group">
+                        <h4>🩸 Glucose</h4>
+                        <div class="measurement-entries">
+                `;
+                
+                dataByDate[date].glucose.forEach(entry => {
+                    dayHTML += `
+                        <div class="measurement-entry">
+                            <div class="measurement-time">${entry.time}</div>
+                            <div class="measurement-value">${entry.value} mg/dL</div>
+                        </div>
+                    `;
+                });
+                
+                dayHTML += `</div></div>`;
+            }
+            
+            // Add blood pressure data
+            if (dataByDate[date]['blood-pressure'].length > 0) {
+                dayHTML += `
+                    <div class="measurement-group">
+                        <h4>🩺 Blood Pressure</h4>
+                        <div class="measurement-entries">
+                `;
+                
+                dataByDate[date]['blood-pressure'].forEach(entry => {
+                    dayHTML += `
+                        <div class="measurement-entry">
+                            <div class="measurement-time">${entry.time}</div>
+                            <div class="measurement-value">${entry.value}</div>
+                        </div>
+                    `;
+                });
+                
+                dayHTML += `</div></div>`;
+            }
+            
+            daySection.innerHTML = dayHTML;
+            historyContainer.appendChild(daySection);
+        });
+    }
 
-        // Set current time for fluid entry
-        document.getElementById('fluidTime').value = new Date().toTimeString().slice(0, 5);
-    </script>
+    // Check reminders
+    function checkReminders() {
+        const now = new Date();
+        const currentTime = now.toTimeString().slice(0, 5);
+        
+        reminders.forEach(reminder => {
+            if (reminder.time === currentTime && reminder.active) {
+                showNotification(`⏰ Time for ${reminder.type.replace('-', ' ')} check!`, 10000);
+            }
+        });
+    }
+
+    // Show notification
+    function showNotification(message, duration = 3000) {
+        const notification = document.getElementById('notification');
+        notification.textContent = message;
+        notification.classList.add('show');
+        
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, duration);
+    }
+
+    // Load all data from API
+    async function loadData() {
+        try {
+            showNotification('Loading data...', 1000);
+            
+            // Load all data in parallel
+            await Promise.all([
+                loadHealthData(),
+                loadFluidData(),
+                loadReminders()
+            ]);
+            
+            console.log('All data loaded successfully');
+        } catch (error) {
+            console.error('Error loading data:', error);
+            showNotification('Failed to load some data. Please refresh the page.', 5000);
+        }
+    }
+
+    // Set current time for fluid entry
+    document.getElementById('fluidTime').value = new Date().toTimeString().slice(0, 5);
+</script>
 </body>
 </html>
