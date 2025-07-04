@@ -19,14 +19,28 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public')); // Serve static files
 
+// Handle Firebase credentials
 let serviceAccount;
-if (process.env.FIREBASE_CREDS) {
-  serviceAccount = JSON.parse(process.env.FIREBASE_CREDS);
-} else if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-  serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+const firebaseCreds = process.env.FIREBASE_CREDS || process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+
+console.log('Environment check:');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID);
+console.log('Has FIREBASE_CREDS:', !!process.env.FIREBASE_CREDS);
+console.log('Has GOOGLE_APPLICATION_CREDENTIALS_JSON:', !!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+
+if (firebaseCreds) {
+  try {
+    serviceAccount = JSON.parse(firebaseCreds);
+    console.log('✅ Firebase credentials loaded successfully');
+  } catch (error) {
+    console.error('❌ Error parsing Firebase credentials:', error.message);
+    process.exit(1);
+  }
 } else {
-  console.error('Missing Firebase credentials');
+  console.error('❌ Missing Firebase credentials. Please set FIREBASE_CREDS environment variable.');
   process.exit(1);
+}
 }
 // UPDATED CODE
 admin.initializeApp({
