@@ -46,10 +46,6 @@ if (firebaseCreds) {
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
-// UPDATED CODE
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
 
 const db = admin.firestore();
 
